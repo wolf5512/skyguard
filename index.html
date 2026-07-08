@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OPERATION SKYGUARD v33014</title>
     <style>
-        /* ==========================================================================
-           SCHRITT 1: BASE44 DESIGN-SKELETT (100% OLED-SCHWARZ & SIGNAL-GRÜN)
-           ========================================================================== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -30,7 +27,6 @@
             transition: filter 0.5s ease;
         }
 
-        /* SCHRITT 6: ASTRONOMISCHER NACHTMODUS-FILTER */
         body.tactical-night {
             filter: contrast(1.2) brightness(0.8);
         }
@@ -155,7 +151,6 @@
 
     <div class="hud-container">
 
-        <!-- HEADER SYSTEM-CLOCK & SCHRITT 13: WATCHDOG -->
         <div class="hud-header">
             <div class="hud-title" id="hud-main-title">📡 SKYGUARD_HUD_v33014</div>
             <div class="hud-status-bar">
@@ -164,19 +159,16 @@
             </div>
         </div>
 
-        <!-- POSITIONS-SENSING -->
         <div class="hud-card full-width">
             <div class="card-title">> POSITIONS-SENSING (GPS)</div>
             <div class="card-value" id="gps-display">INIT SENSORS...</div>
         </div>
 
-        <!-- HEMS RADAR ZELLE -->
         <div class="hud-card full-width">
             <div class="card-title">> HEMS HELO WATCHDOG (30S)</div>
             <div class="card-value" id="hems-display">AIRSPACE: CLEAN</div>
         </div>
 
-        <!-- DIE 5 WIND-HÖHENSTUFEN -->
         <div class="hud-card full-width">
             <div class="card-title">> WIND-PROFILE (5-LEVELS)</div>
             <div class="wind-profile">
@@ -188,7 +180,6 @@
             </div>
         </div>
 
-        <!-- COMPLIANCE MATRIX -->
         <div class="hud-card full-width">
             <div class="card-title">> UAV COMPLIANCE MATRIX</div>
             <div class="matrix-row">
@@ -201,7 +192,6 @@
             </div>
         </div>
 
-        <!-- SCHRITT 11: METEOROLOGISCHE MATRIX (SICHT & REGEN) -->
         <div class="hud-card">
             <div class="card-title">> VISIBILITY</div>
             <div class="card-value" id="vis-display">-- KM</div>
@@ -212,7 +202,6 @@
             <div class="card-value" id="rain-display">-- MM</div>
         </div>
 
-        <!-- HARDWARE & SCHRITT 10: GEOMAGNETIK (NOAA-KP) -->
         <div class="hud-card">
             <div class="card-title">> HW-BATT</div>
             <div class="card-value" id="batt-display">--%</div>
@@ -223,7 +212,6 @@
             <div class="card-value" id="kp-display">KP: -</div>
         </div>
 
-        <!-- WINDNADEL & GRADZAHL -->
         <div class="hud-card full-width">
             <div class="card-title">> TACTICAL WIND BEARING</div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -232,7 +220,6 @@
             </div>
         </div>
 
-        <!-- FRESHNESS-TIMESTAMP -->
         <div class="hud-card full-width">
             <div class="card-title">> REFRESH COUNTER</div>
             <div class="hud-status-bar" style="font-size: 13px;">
@@ -241,7 +228,6 @@
             </div>
         </div>
 
-        <!-- INTERFACE ACTIONS -->
         <div class="hud-actions">
             <button class="hud-btn" id="btn-gps">[ GPS ]</button>
             <button class="hud-btn" id="btn-execute">[ EXECUTE ]</button>
@@ -257,20 +243,15 @@
         let kpInterval = null;
         let wakeLock = null;
 
-        // FORTLAUFEND GETAKTETE SYSTEM-UHR ENGINE
         function updateClock() {
             const now = new Date();
-            // Holt die reine, sekundengenaue Uhrzeit als Textstring heraus
-            const timeString = now.toTimeString().split(' ')[0];
-            document.getElementById('sys-clock').textContent = timeString;
+            const timeString = now.toTimeString().split(' ');
+            document.getElementById('sys-clock').textContent = timeString[0];
             checkAstronomicalNight();
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        /* ==========================================================================
-           SCHRITT 13: INTERNET-OFFLINE-WATCHDOG WITH DATA FREEZE
-           ========================================================================== */
         window.addEventListener('online', () => {
             const netStatus = document.getElementById('net-status');
             netStatus.textContent = "📡 NET: OK";
@@ -285,16 +266,48 @@
             netStatus.style.color = "#FF0000";
         });
 
-        /* ==========================================================================
-           SCHRITT 12: WAKE-LOCK ENGINE (BILDSCHIRM-DAUERSPERRE)
-           ========================================================================== */
         async function requestWakeLock() {
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
                 } catch (err) {
-                    console.error(`WAKE LOCK FAILED: ${err.message}`);
+                    console.error(err);
                 }
             }
         }
-document.addEventListener('visibilitychange', async () => {if (wakeLock !== null && document.visibilityState === 'visible') {await requestWakeLock();}});/* ==========================================================================SCHRITT 2: ERSTSCHLAG-START (HARDWARE-ZÜNDUNG MIT INTEGRIERTEM SCHUTZ-KIT)========================================================================== */function triggerGPS() {const gpsDisplay = document.getElementById('gps-display');gpsDisplay.innerHTML = "SEARCHING SAT...";if (!navigator.geolocation) {gpsDisplay.innerHTML = "🚨 GPS NOT SUPPORTED";return;}const options = {enableHighAccuracy: true,timeout: 10000,maximumAge: 0};navigator.geolocation.getCurrentPosition((position) => {currentLat = parseFloat(position.coords.latitude);currentLon = parseFloat(position.coords.longitude);gpsDisplay.innerHTML = LAT: ${currentLat.toFixed(6)}<br>LON: ${currentLon.toFixed(6)};if (navigator.onLine) {fetchWeatherData();scanHEMSSpace();fetchKPIndex();checkAstronomicalNight();updateHardwareBattery();requestWakeLock();}if (weatherInterval) clearInterval(weatherInterval);weatherInterval = setInterval(fetchWeatherData, 15 * 60 * 1000);if (hemsInterval) clearInterval(hemsInterval);hemsInterval = setInterval(scanHEMSSpace, 30 * 1000);if (kpInterval) clearInterval(kpInterval);kpInterval = setInterval(fetchKPIndex, 60 * 60 * 1000);},(error) => {console.log(error);// Das scharfgeschaltete Sicherheits-Kit bei Hardware-Blockadenswitch(error.code) {case error.PERMISSION_DENIED:gpsDisplay.innerText = "GPS ACCESS DENIED";break;case error.POSITION_UNAVAILABLE:gpsDisplay.innerText = "GPS UNAVAILABLE";break;case error.TIMEOUT:gpsDisplay.innerText = "GPS TIMEOUT";break;default:gpsDisplay.innerText = "GPS ERROR";}},options);}/* ==========================================================================SCHRITT 3 & 7 & 8 & 11: AUTOMATISCHER WETTER-TAKT & WARN-MATRIX========================================================================== */function fetchWeatherData() {if (!navigator.onLine || !currentLat || !currentLon) return;const url = https://open-meteo.com{currentLat}&longitude=${currentLon}&current=wind_speed_10m,wind_direction_10m,visibility,precipitation&forecast_days=1;fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {const current = data.current;const baseWind = current.wind_speed_10m || 0;const windDir = current.wind_direction_10m || 0;const w0 = Math.round(baseWind);const w30 = Math.round(baseWind * Math.pow(30 / 10, 0.2));const w60 = Math.round(baseWind * Math.pow(60 / 10, 0.2));const w90 = Math.round(baseWind * Math.pow(90 / 10, 0.2));const w120 = Math.round(baseWind * Math.pow(120 / 10, 0.2));document.getElementById('wind-0').textContent = ${w0} KM/H;document.getElementById('wind-30').textContent = ${w30} KM/H;document.getElementById('wind-60').textContent = ${w60} KM/H;document.getElementById('wind-90').textContent = ${w90} KM/H;document.getElementById('wind-120').textContent = ${w120} KM/H;/* ==========================================================================SCHRITT 11: SICHT- & REGEN-MATRIX WITH DYNAMIC ALARMS========================================================================== */const visDisplayEl = document.getElementById('vis-display');const rainDisplayEl = document.getElementById('rain-display');const visKm = current.visibility ? (current.visibility / 1000).toFixed(1) : "--";const rainMm = current.precipitation || 0;visDisplayEl.textContent = ${visKm} KM;rainDisplayEl.textContent = ${rainMm.toFixed(1)} MM;if (current.visibility && current.visibility < 5000) {visDisplayEl.className = "card-value blink";visDisplayEl.style.color = "#FF0000";} else {visDisplayEl.className = "card-value";visDisplayEl.style.color = "#00FF00";}if (rainMm > 0) {rainDisplayEl.className = "card-value blink";rainDisplayEl.style.color = "#FF0000";} else {rainDisplayEl.className = "card-value";rainDisplayEl.style.color = "#00FF00";}document.getElementById('wind-dir-text').textContent = DIR: ${windDir}°;// SCHRITT 7: Windnadel drehenconst arrowEl = document.getElementById('wind-arrow');arrowEl.style.transform = rotate(${windDir}deg);// SCHRITT 8: UAV COMPLIANCE MATRIXconst maxWindC0 = 35;const maxWindC1 = 38;const windLevels = [w0, w30, w60, w90, w120];const c0Violated = windLevels.some(speed => speed > maxWindC0);const c1Violated = windLevels.some(speed => speed > maxWindC1);const compC0El = document.getElementById('compliance-c0');const compC1El = document.getElementById('compliance-c1');if (c0Violated) {compC0El.textContent = "🔴 LOCKED";compC0El.className = "blink";compC0El.style.color = "#FF0000";} else {compC0El.textContent = "🟢 SAFE";compC0El.className = "";compC0El.style.color = "#00FF00";}if (c1Violated) {compC1El.textContent = "🔴 LOCKED";compC1El.className = "blink";compC1El.style.color = "#FF0000";} else {compC1El.textContent = "🟢 SAFE";compC1El.className = "";compC1El.style.color = "#00FF00";}const now = new Date();document.getElementById('last-update').textContent = now.toTimeString().split(' ')[0];}).catch(error => console.error("Weather Engine Busy"));}/* ==========================================================================SCHRITT 4: AUTOMATISCHER HEMS-DAUER-SCANNER (30 SEKUNDEN OPENSKY API)========================================================================== */function scanHEMSSpace() {if (!navigator.onLine || !currentLat || !currentLon) return;const hemsDisplay = document.getElementById('hems-display');const boxSize = 0.3;const lamin = (currentLat - boxSize).toFixed(4);const lamax = (currentLat + boxSize).toFixed(4);const lomin = (currentLon - boxSize).toFixed(4);const lomax = (currentLon + boxSize).toFixed(4);const url = https://opensky-network.org{lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax};fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {if (!data.states || data.states.length === 0) {hemsDisplay.innerHTML = "AIRSPACE: CLEAN";hemsDisplay.className = "card-value";return;}let helosDetected = 0;data.states.forEach(aircraft => {const callsign = aircraft ? aircraft.trim().toUpperCase() : "";if (callsign.startsWith("CHX") || callsign.startsWith("CHG") || callsign.startsWith("SAR") || callsign.includes("HEMS") || callsign.startsWith("AMB")) {helosDetected++;}});if (helosDetected > 0) {hemsDisplay.innerHTML = ⚠️ ALARM: ${helosDetected} HEMS HELO(S) IN BOUNDS!;hemsDisplay.className = "card-value blink";} else {hemsDisplay.innerHTML = "AIRSPACE: CLEAN";hemsDisplay.className = "card-value";}}).catch(err => console.error("HEMS Engine Rate Limit"));}/* ==========================================================================SCHRITT 10: KP-WELTRAUMWETTER (NOAA REALTIME GEOMAGNETIK WATCHDOG)========================================================================= */function fetchKPIndex() {if (!navigator.onLine) return;const kpDisplayEl = document.getElementById('kp-display');const url = 'noaa.gov';fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {if (!data || data.length === 0) return;const latestRecord = data[data.length - 1];const kpIndex = Math.round(latestRecord.kp_index);kpDisplayEl.textContent = KP: ${kpIndex};if (kpIndex >= 5) {kpDisplayEl.className = "card-value blink";kpDisplayEl.style.color = "#FF0000";} else {kpDisplayEl.className = "card-value";kpDisplayEl.style.color = "#00FF00";}}).catch(() => console.error("NOAA Space Weather Server Busy"));}/* ==========================================================================SCHRITT 5: DUALES TAKTIK-INTERFACE (VERKNÜPFUNG ERZWUNGENER LIVE-MANÖVER)========================================================================== */function triggerExecuteManual() {if (!navigator.onLine) return;fetchWeatherData();scanHEMSSpace();fetchKPIndex();updateHardwareBattery();requestWakeLock();}/* ==========================================================================SCHRITT 6: ASTRONOMISCHER LIVE-NACHTMODUS========================================================================== */function checkAstronomicalNight() {if (!currentLat) return;const now = new Date();const hour = now.getHours();const isNightModeActive = (hour >= 18 || hour < 6);const bodyEl = document.body;const titleEl = document.getElementById('hud-main-title');if (isNightModeActive) {if (!bodyEl.classList.contains('tactical-night')) {bodyEl.classList.add('tactical-night');titleEl.textContent = "🌙 SKYGUARD_HUD [NIGHT]";}} else {if (bodyEl.classList.contains('tactical-night')) {bodyEl.classList.remove('tactical-night');titleEl.textContent = "📡 SKYGUARD_HUD_v33014";}}}/* ==========================================================================SCHRITT 9: HARDWARE-AKKUWÄCHTER========================================================================== */function updateHardwareBattery() {if (!navigator.getBattery) {document.getElementById('batt-display').textContent = "N/A";return;}navigator.getBattery().then(battery => {function processBatteryData() {const level = Math.round(battery.level * 100);const battDisplayEl = document.getElementById('batt-display');battDisplayEl.textContent = ${level}%;if (level < 20) {battDisplayEl.className = "card-value blink";battDisplayEl.style.color = "#FF0000";} else {battDisplayEl.className = "card-value";battDisplayEl.style.color = "#00FF00";}}processBatteryData();battery.addEventListener('levelchange', processBatteryData);}).catch(() => {document.getElementById('batt-display').textContent = "ERR";});}// HARDWARE-KNOPF EVENT BINDUNGENdocument.getElementById('btn-gps').addEventListener('click', triggerGPS);document.getElementById('btn-execute').addEventListener('click', triggerExecuteManual);// ERSTSCHLAG BEIM LADENwindow.addEventListener('DOMContentLoaded', () => {triggerGPS();updateHardwareBattery();});
+
+        function triggerGPS() {
+            const gpsDisplay = document.getElementById('gps-display');
+            gpsDisplay.innerHTML = "SEARCHING SAT...";
+
+            if (!navigator.geolocation) {
+                gpsDisplay.innerHTML = "🚨 GPS NOT SUPPORTED";
+                return;
+            }
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    currentLat = parseFloat(position.coords.latitude);
+                    currentLon = parseFloat(position.coords.longitude);
+                    gpsDisplay.innerHTML = `LAT: ${currentLat.toFixed(6)}<br>LON: ${currentLon.toFixed(6)}`;
+                    
+                    if (navigator.onLine) {
+                        fetchWeatherData();
+                        scanHEMSSpace();
+                        fetchKPIndex();
+                        checkAstronomicalNight();
+                        updateHardwareBattery();
+                        requestWakeLock();
+                    }
+                    
+                    if (weatherInterval) clearInterval(weatherInterval);
+                    weatherInterval = setInterval(fetchWeatherData, 15 * 60 * 1000);
+
+                    if (hemsInterval) clearInterval(hemsInterval);
+hemsInterval = setInterval(scanHEMSSpace, 30 * 1000);if (kpInterval) clearInterval(kpInterval);kpInterval = setInterval(fetchKPIndex, 60 * 60 * 1000);},(error) => {switch(error.code) {case error.PERMISSION_DENIED:gpsDisplay.innerText = "GPS ACCESS DENIED";break;case error.POSITION_UNAVAILABLE:gpsDisplay.innerText = "GPS UNAVAILABLE";break;case error.TIMEOUT:gpsDisplay.innerText = "GPS TIMEOUT";break;default:gpsDisplay.innerText = "GPS ERROR";}},options);}function fetchWeatherData() {if (!navigator.onLine || !currentLat || !currentLon) return;const url = https://open-meteo.com{currentLat}&longitude=${currentLon}&current=wind_speed_10m,wind_direction_10m,visibility,precipitation&forecast_days=1;fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {const current = data.current;const baseWind = current.wind_speed_10m || 0;const windDir = current.wind_direction_10m || 0;const w0 = Math.round(baseWind);const w30 = Math.round(baseWind * Math.pow(30 / 10, 0.2));const w60 = Math.round(baseWind * Math.pow(60 / 10, 0.2));const w90 = Math.round(baseWind * Math.pow(90 / 10, 0.2));const w120 = Math.round(baseWind * Math.pow(120 / 10, 0.2));document.getElementById('wind-0').textContent = ${w0} KM/H;document.getElementById('wind-30').textContent = ${w30} KM/H;document.getElementById('wind-60').textContent = ${w60} KM/H;document.getElementById('wind-90').textContent = ${w90} KM/H;document.getElementById('wind-120').textContent = ${w120} KM/H;const visDisplayEl = document.getElementById('vis-display');const rainDisplayEl = document.getElementById('rain-display');const visKm = current.visibility ? (current.visibility / 1000).toFixed(1) : "--";const rainMm = current.precipitation || 0;visDisplayEl.textContent = ${visKm} KM;rainDisplayEl.textContent = ${rainMm.toFixed(1)} MM;if (current.visibility && current.visibility < 5000) {visDisplayEl.className = "card-value blink";visDisplayEl.style.color = "#FF0000";} else {visDisplayEl.className = "card-value";visDisplayEl.style.color = "#00FF00";}if (rainMm > 0) {rainDisplayEl.className = "card-value blink";rainDisplayEl.style.color = "#FF0000";} else {rainDisplayEl.className = "card-value";rainDisplayEl.style.color = "#00FF00";}document.getElementById('wind-dir-text').textContent = DIR: ${windDir}°;const arrowEl = document.getElementById('wind-arrow');arrowEl.style.transform = rotate(${windDir}deg);const maxWindC0 = 35;const maxWindC1 = 38;const windLevels = [w0, w30, w60, w90, w120];const c0Violated = windLevels.some(speed => speed > maxWindC0);const c1Violated = windLevels.some(speed => speed > maxWindC1);const compC0El = document.getElementById('compliance-c0');const compC1El = document.getElementById('compliance-c1');if (c0Violated) {compC0El.textContent = "🔴 LOCKED";compC0El.className = "blink";compC0El.style.color = "#FF0000";} else {compC0El.textContent = "🟢 SAFE";compC0El.className = "";compC0El.style.color = "#00FF00";}if (c1Violated) {compC1El.textContent = "🔴 LOCKED";compC1El.className = "blink";compC1El.style.color = "#FF0000";} else {compC1El.textContent = "🟢 SAFE";compC1El.className = "";compC1El.style.color = "#00FF00";}const now = new Date();document.getElementById('last-update').textContent = now.toTimeString().split(' ')[0];}).catch(error => console.error(error));}function scanHEMSSpace() {if (!navigator.onLine || !currentLat || !currentLon) return;const hemsDisplay = document.getElementById('hems-display');const boxSize = 0.3;const lamin = (currentLat - boxSize).toFixed(4);const lamax = (currentLat + boxSize).toFixed(4);const lomin = (currentLon - boxSize).toFixed(4);const lomax = (currentLon + boxSize).toFixed(4);const url = https://opensky-network.org{lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax};fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {if (!data.states || data.states.length === 0) {hemsDisplay.innerHTML = "AIRSPACE: CLEAN";hemsDisplay.className = "card-value";return;}let helosDetected = 0;data.states.forEach(aircraft => {const callsign = aircraft ? aircraft.trim().toUpperCase() : "";if (callsign.startsWith("CHX") || callsign.startsWith("CHG") || callsign.startsWith("SAR") || callsign.includes("HEMS") || callsign.startsWith("AMB")) {helosDetected++;}});if (helosDetected > 0) {hemsDisplay.innerHTML = ⚠️ ALARM: ${helosDetected} HEMS HELO(S) IN BOUNDS!;hemsDisplay.className = "card-value blink";} else {hemsDisplay.innerHTML = "AIRSPACE: CLEAN";hemsDisplay.className = "card-value";}}).catch(err => console.error(err));}function fetchKPIndex() {if (!navigator.onLine) return;const kpDisplayEl = document.getElementById('kp-display');const url = 'noaa.gov';fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {if (!data || data.length === 0) return;const latestRecord = data[data.length - 1];const kpIndex = Math.round(latestRecord.kp_index);kpDisplayEl.textContent = KP: ${kpIndex};if (kpIndex >= 5) {kpDisplayEl.className = "card-value blink";kpDisplayEl.style.color = "#FF0000";} else {kpDisplayEl.className = "card-value";kpDisplayEl.style.color = "#00FF00";}}).catch(err => console.error(err));}function triggerExecuteManual() {if (!navigator.onLine) return;fetchWeatherData();scanHEMSSpace();fetchKPIndex();updateHardwareBattery();requestWakeLock();}function checkAstronomicalNight() {if (!currentLat) return;const now = new Date();const hour = now.getHours();const isNightModeActive = (hour >= 18 || hour < 6);const bodyEl = document.body;const titleEl = document.getElementById('hud-main-title');if (isNightModeActive) {if (!bodyEl.classList.contains('tactical-night')) {bodyEl.classList.add('tactical-night');titleEl.textContent = "🌙 SKYGUARD_HUD [NIGHT]";}} else {if (bodyEl.classList.contains('tactical-night')) {bodyEl.classList.remove('tactical-night');titleEl.textContent = "📡 SKYGUARD_HUD_v33014";}}}function updateHardwareBattery() {if (!navigator.getBattery) {document.getElementById('batt-display').textContent = "N/A";return;}navigator.getBattery().then(battery => {function processBatteryData() {const level = Math.round(battery.level * 100);const battDisplayEl = document.getElementById('batt-display');battDisplayEl.textContent = ${level}%;if (level < 20) {battDisplayEl.className = "card-value blink";battDisplayEl.style.color = "#FF0000";} else {battDisplayEl.className = "card-value";battDisplayEl.style.color = "#00FF00";}}processBatteryData();battery.addEventListener('levelchange', processBatteryData);}).catch(() => {document.getElementById('batt-display').textContent = "ERR";});}document.getElementById('btn-gps').addEventListener('click', triggerGPS);document.getElementById('btn-execute').addEventListener('click', triggerExecuteManual);window.addEventListener('DOMContentLoaded', () => {triggerGPS();updateHardwareBattery();});

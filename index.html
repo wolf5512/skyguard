@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -30,10 +30,9 @@
             transition: filter 0.5s ease;
         }
 
-            /* SCHRITT 6: ASTRONOMISCHER NACHTMODUS-FILTER */
-            body.tactical-night {
-                filter: contrast(1.2) brightness(0.8);
-            }
+        body.tactical-night {
+            filter: contrast(1.2) brightness(0.8);
+        }
 
         .hud-container {
             display: grid;
@@ -64,6 +63,24 @@
             display: flex;
             justify-content: space-between;
             font-size: 12px;
+        }
+
+        /* MANUELLE ORTSSUCHE MATRIX */
+        .search-box {
+            background-color: #000000;
+            color: #00FF00;
+            border: 2px solid #00FF00;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 8px;
+            width: 100%;
+            text-transform: uppercase;
+            outline: none;
+        }
+        
+        .search-box::placeholder {
+            color: #004400;
         }
 
         .hud-card {
@@ -99,9 +116,9 @@
             padding: 2px 0;
         }
 
-            .matrix-row:last-child {
-                border-bottom: none;
-            }
+        .matrix-row:last-child {
+            border-bottom: none;
+        }
 
         .hud-actions {
             grid-column: span 2;
@@ -123,10 +140,10 @@
             cursor: pointer;
         }
 
-            .hud-btn:active {
-                background-color: #00FF00;
-                color: #000000;
-            }
+        .hud-btn:active {
+            background-color: #00FF00;
+            color: #000000;
+        }
 
         .wind-profile {
             display: flex;
@@ -145,17 +162,9 @@
         }
 
         @keyframes tactical-blink {
-            0% {
-                opacity: 1.0;
-            }
-
-            50% {
-                opacity: 0.2;
-            }
-
-            100% {
-                opacity: 1.0;
-            }
+            0% { opacity: 1.0; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1.0; }
         }
     </style>
 </head>
@@ -163,7 +172,7 @@
 
     <div class="hud-container">
 
-        <!-- HEADER SYSTEM-CLOCK & SCHRITT 13: WATCHDOG -->
+        <!-- HEADER SYSTEM-CLOCK -->
         <div class="hud-header">
             <div class="hud-title" id="hud-main-title">📡 SKYGUARD_HUD_v33014</div>
             <div class="hud-status-bar">
@@ -172,10 +181,16 @@
             </div>
         </div>
 
+        <!-- NEU: MANUELLE MANÖVER-ORTUNG (STADT ODER PLZ) -->
+        <div class="hud-card full-width">
+            <div class="card-title">> MANUAL LOCATION SEARCH (CITY / ZIP)</div>
+            <input type="text" id="target-search" class="search-box" placeholder="STADT ODER PLZ EINGEBEN...">
+        </div>
+
         <!-- POSITIONS-SENSING -->
         <div class="hud-card full-width">
             <div class="card-title">> POSITIONS-SENSING (GPS)</div>
-            <div class="card-value" id="gps-display">INIT SENSORS...</div>
+            <div class="card-value" id="gps-display">SCANNING GPS...</div>
         </div>
 
         <!-- HEMS RADAR ZELLE -->
@@ -197,19 +212,21 @@
         </div>
 
         <!-- COMPLIANCE MATRIX -->
-        <div class="hud-card full-width">
-            <div class="card-title">> UAV COMPLIANCE MATRIX</div>
-            <div class="matrix-row">
-                <span>C0 (<250G) [MAX 35KM /H]:</span>
-                <span id="compliance-c0">--</span>
-            </div>
-            <div class="matrix-row">
-                <span>C1 (<900G) [MAX 38KM /H]:</span>
-                <span id="compliance-c1">--</span>
+        <div class="hud-container full-width" style="display: block; width: 100%;">
+            <div class="hud-card" style="width: 100%;">
+                <div class="card-title">> UAV COMPLIANCE MATRIX</div>
+                <div class="matrix-row">
+                    <span>C0 (&lt;250G) [MAX 35KM /H]:</span>
+                    <span id="compliance-c0">--</span>
+                </div>
+                <div class="matrix-row">
+                    <span>C1 (&lt;900G) [MAX 38KM /H]:</span>
+                    <span id="compliance-c1">--</span>
+                </div>
             </div>
         </div>
 
-        <!-- SCHRITT 11: METEOROLOGISCHE MATRIX (SICHT & REGEN) -->
+        <!-- METEOROLOGISCHE MATRIX (SICHT & REGEN) -->
         <div class="hud-card">
             <div class="card-title">> VISIBILITY</div>
             <div class="card-value" id="vis-display">-- KM</div>
@@ -220,7 +237,7 @@
             <div class="card-value" id="rain-display">-- MM</div>
         </div>
 
-        <!-- HARDWARE & SCHRITT 10: GEOMAGNETIK (NOAA-KP) -->
+        <!-- HARDWARE & GEOMAGNETIK -->
         <div class="hud-card">
             <div class="card-title">> HW-BATT</div>
             <div class="card-value" id="batt-display">--%</div>
@@ -251,7 +268,7 @@
 
         <!-- INTERFACE ACTIONS -->
         <div class="hud-actions">
-            <button class="hud-btn" id="btn-gps">[ GPS ]</button>
+            <button class="hud-btn" id="btn-gps">[ RE-SCAN ]</button>
             <button class="hud-btn" id="btn-execute">[ EXECUTE ]</button>
         </div>
 
@@ -260,52 +277,31 @@
     <script>
         let currentLat = null;
         let currentLon = null;
-        let weatherInterval = null;
-        let hemsInterval = null;
-        let kpInterval = null;
-        let wakeLock = null;
 
-        // SYSTEM-UHR ENGINE
-        function updateClock() {
-            const now = new Date();
-            const timeString = now.toTimeString().split(' ');
-            document.getElementById('sys-clock').textContent = timeString;
-            checkAstronomicalNight();
+        // SYSTEM-UHR
+        function startSystemClock() {
+            setInterval(() => {
+                const now = new Date();
+                const clockEl = document.getElementById('sys-clock');
+                if (clockEl) clockEl.innerText = now.toTimeString().split(' ');
+            }, 1000);
         }
-        setInterval(updateClock, 1000);
-        updateClock();
 
-        /* ==========================================================================
-           SCHRITT 13: INTERNET-OFFLINE-WATCHDOG WITH DATA FREEZE
-           ========================================================================== */
-        window.addEventListener('online', () => {
-            const netStatus = document.getElementById('net-status');
-            netStatus.textContent = "📡 NET: OK";
-            netStatus.className = "";
-            netStatus.style.color = "#00FF00";
-            console.log("NET WATCHDOG: CONNECTION RESTORED.");
-        });
-
-        window.addEventListener('offline', () => {
-            const netStatus = document.getElementById('net-status');
-            netStatus.textContent = "🚨 NET: OFFLINE";
-            netStatus.className = "blink";
-            netStatus.style.color = "#FF0000";
-            console.warn("NET WATCHDOG: FUNKLOCH DETECTED. FREEZING DISPLAY DATA.");
-        });
-
-        /* ==========================================================================
-           SCHRITT 12: WAKE-LOCK ENGINE (BILDSCHIRM-DAUERSPERRE)
-           ========================================================================== */
-        async function requestWakeLock() {
-            if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log("WAKE LOCK: SCREEN STAY-ALIVE ENGAGED.");
-
-                    wakeLock.addEventListener('release', () => { console.log("WAKE LOCK: RELEASED."); });
-                } catch (err) { console.error(WAKE LOCK FAILED: ${ err.message }); }
+        // AUTOMATISCHE GEOLOCATION (STARTET BEIM ÖFFNEN)
+        function triggerAutomaticGPS() {
+            const gpsDisplay = document.getElementById('gps-display');
+            const gpsBtn = document.getElementById('btn-gps');
+            
+            if (gpsBtn) gpsBtn.innerText = "[ SCANNING... ]";
+            if (gpsDisplay) gpsDisplay.innerText = "SCANNING GPS...";
+            
+            if (!navigator.geolocation) {
+                if (gpsBtn) gpsBtn.innerText = "[ NO GPS ]";
+                if (gpsDisplay) gpsDisplay.innerText = "NO SENSOR FOUND";
+                return;
             }
-        } document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') { await requestWakeLock(); } });/* ==========================================================================SCHRITT 2: ERSTSCHLAG-START (HARDWARE-ZÜNDUNG DES GPS)========================================================================== */function triggerGPS() {
-            const gpsDisplay = document.getElementById('gps-display'); gpsDisplay.innerHTML = "SEARCHING SAT..."; if (!navigator.geolocation) { gpsDisplay.innerHTML = "🚨 GPS NOT SUPPORTED"; return; } const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }; navigator.geolocation.getCurrentPosition((position) => {
-                currentLat = parseFloat(position.coords.latitude); currentLon = parseFloat(position.coords.longitude); gpsDisplay.innerHTML = LAT: ${ currentLat.toFixed(6) } <br>LON: ${currentLon.toFixed(6)};if (navigator.onLine) {fetchWeatherData();scanHEMSSpace();fetchKPIndex();checkAstronomicalNight();updateHardwareBattery();requestWakeLock();}if (weatherInterval) clearInterval(weatherInterval);weatherInterval = setInterval(fetchWeatherData, 15 * 60 * 1000);if (hemsInterval) clearInterval(hemsInterval);hemsInterval = setInterval(scanHEMSSpace, 30 * 1000);if (kpInterval) clearInterval(kpInterval);kpInterval = setInterval(fetchKPIndex, 60 * 60 * 1000);},(error) => {gpsDisplay.innerHTML = 🚨 FIX FAILED<br>ERR: ${error.code};},options);}/* ==========================================================================SCHRITT 3 & 7 & 8 & 11: AUTOMATISCHER WETTER-TAKT & WARN-MATRIX========================================================================== */function fetchWeatherData() {if (!navigator.onLine || !currentLat || !currentLon) return;const url = https://open-meteo.com{currentLat}&longitude=${currentLon}&current=wind_speed_10m,wind_direction_10m,visibility,precipitation&forecast_days=1;fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {const current = data.current;const baseWind = current.wind_speed_10m || 0;const windDir = current.wind_direction_10m || 0;const w0 = Math.round(baseWind);const w30 = Math.round(baseWind * Math.pow(30 / 10, 0.2));const w60 = Math.round(baseWind * Math.pow(60 / 10, 0.2));const w90 = Math.round(baseWind * Math.pow(90 / 10, 0.2));const w120 = Math.round(baseWind * Math.pow(120 / 10, 0.2));document.getElementById('wind-0').textContent = ${w0} KM/H;document.getElementById('wind-30').textContent = ${w30} KM/H;document.getElementById('wind-60').textContent = ${w60} KM/H;document.getElementById('wind-90').textContent = ${w90} KM/H;document.getElementById('wind-120').textContent = ${w120} KM/H;/* ==========================================================================SCHRITT 11: SICHT- & REGEN-MATRIX WITH DYNAMIC ALARMS========================================================================== */const visDisplayEl = document.getElementById('vis-display');const rainDisplayEl = document.getElementById('rain-display');const visKm = current.visibility ? (current.visibility / 1000).toFixed(1) : "--";const rainMm = current.precipitation || 0;visDisplayEl.textContent = ${visKm} KM;rainDisplayEl.textContent = ${rainMm.toFixed(1)} MM;if (current.visibility && current.visibility < 5000) {visDisplayEl.className = "card-value blink";visDisplayEl.style.color = "#FF0000";} else {visDisplayEl.className = "card-value";visDisplayEl.style.color = "#00FF00";}if (rainMm > 0) {rainDisplayEl.className = "card-value blink";rainDisplayEl.style.color = "#FF0000";} else {rainDisplayEl.className = "card-value";rainDisplayEl.style.color = "#00FF00";}document.getElementById('wind-dir-text').textContent = DIR: ${windDir}°;// SCHRITT 7: Windnadel drehenconst arrowEl = document.getElementById('wind-arrow');arrowEl.style.transform = rotate(${windDir}deg);// SCHRITT 8: UAV COMPLIANCE MATRIXconst maxWindC0 = 35;const maxWindC1 = 38;const windLevels = [w0, w30, w60, w90, w120];const c0Violated = windLevels.some(speed => speed > maxWindC0);const c1Violated = windLevels.some(speed => speed > maxWindC1);const compC0El = document.getElementById('compliance-c0');const compC1El = document.getElementById('compliance-c1');if (c0Violated) {compC0El.textContent = "🔴 LOCKED";compC0El.className = "blink";compC0El.style.color = "#FF0000";} else {compC0El.textContent = "🟢 SAFE";compC0El.className = "";compC0El.style.color = "#00FF00";}if (c1Violated) {compC1El.textContent = "🔴 LOCKED";compC1El.className = "blink";compC1El.style.color = "#FF0000";} else {compC1El.textContent = "🟢 SAFE";compC1El.className = "";compC1El.style.color = "#00FF00";}const now = new Date();document.getElementById('last-update').textContent = now.toTimeString().split(' ');}).catch(error => console.error("Weather Engine Busy"));}/* ==========================================================================SCHRITT 4: AUTOMATISCHER HEMS-DAUER-SCANNER (30 SEKUNDEN OPENSKY API)========================================================================== */function scanHEMSSpace() {if (!navigator.onLine || !currentLat || !currentLon) return;const hemsDisplay = document.getElementById('hems-display');const boxSize = 0.3;const lamin = (currentLat - boxSize).toFixed(4);const lamax = (currentLat + boxSize).toFixed(4);const lomin = (currentLon - boxSize).toFixed(4);const lomax = (currentLon + boxSize).toFixed(4);const url = https://opensky-network.org{lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax};fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {if (!data.states || data.states.length === 0) {hemsDisplay.innerHTML = "AIRSPACE: CLEAN";hemsDisplay.className = "card-value";return;}let helosDetected = 0;data.states.forEach(aircraft => {const callsign = aircraft ? aircraft.trim().toUpperCase() : "";if (callsign.startsWith("CHX") || callsign.startsWith("CHG") || callsign.startsWith("SAR") || callsign.includes("HEMS") || callsign.startsWith("AMB")) {helosDetected++;}});if (helosDetected > 0) {hemsDisplay.innerHTML = ⚠️ ALARM: ${helosDetected} HEMS HELO(S) IN BOUNDS!;hemsDisplay.className = "card-value blink";} else {hemsDisplay.innerHTML = "AIRSPACE: CLEAN";hemsDisplay.className = "card-value";}}).catch(err => console.error("HEMS Engine Rate Limit"));}/* ==========================================================================SCHRITT 10: KP-WELTRAUMWETTER (NOAA REALTIME GEOMAGNETIK WATCHDOG)========================================================================== */function fetchKPIndex() {if (!navigator.onLine) return;const kpDisplayEl = document.getElementById('kp-display');const url = 'noaa.gov';fetch(url).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {if (!data || data.length === 0) return;const latestRecord = data[data.length - 1];const kpIndex = Math.round(latestRecord.kp_index);kpDisplayEl.textContent = KP: ${kpIndex};if (kpIndex >= 5) {kpDisplayEl.className = "card-value blink";kpDisplayEl.style.color = "#FF0000";console.warn(SPACE WEATHER WARNING: HIGH GEOMAGNETIC INTERFERENCE RISK (KP ${kpIndex}));} else {kpDisplayEl.className = "card-value";kpDisplayEl.style.color = "#00FF00";}}).catch(() => {console.error("NOAA Space Weather Server Busy");});}/* ==========================================================================SCHRITT 5: DUALES TAKTIK-INTERFACE (VERKNÜPFUNG ERZWUNGENER LIVE-MANÖVER)========================================================================== */function triggerExecuteManual() {if (!navigator.onLine) return;fetchWeatherData();scanHEMSSpace();fetchKPIndex();updateHardwareBattery();requestWakeLock();}/* ==========================================================================SCHRITT 6: ASTRONOMISCHER LIVE-NACHTMODUS========================================================================== */function checkAstronomicalNight() {if (!currentLat) return;const now = new Date();const hour = now.getHours();const isNightModeActive = (hour >= 18 || hour < 6);const bodyEl = document.body;const titleEl = document.getElementById('hud-main-title');if (isNightModeActive) {if (!bodyEl.classList.contains('tactical-night')) {bodyEl.classList.add('tactical-night');titleEl.textContent = "🌙 SKYGUARD_HUD [NIGHT]";}} else {if (bodyEl.classList.contains('tactical-night')) {bodyEl.classList.remove('tactical-night');titleEl.textContent = "📡 SKYGUARD_HUD_v33014";}}}/* ==========================================================================SCHRITT 9: HARDWARE-AKKUWÄCHTER========================================================================== */function updateHardwareBattery() {if (!navigator.getBattery) {document.getElementById('batt-display').textContent = "N/A";return;}navigator.getBattery().then(battery => {function processBatteryData() { const level = Math.round(battery.level * 100); const battDisplayEl = document.getElementById('batt-display'); battDisplayEl.textContent = ${ level }%; if (level < 20) { battDisplayEl.className = "card-value blink"; battDisplayEl.style.color = "#FF0000"; } else { battDisplayEl.className = "card-value"; battDisplayEl.style.color = "#00FF00"; } }processBatteryData();battery.addEventListener('levelchange', processBatteryData);}).catch(() => {document.getElementById('batt-display').textContent = "ERR";});}// HARDWARE-KNOPF EVENT BINDUNGENdocument.getElementById('btn-gps').addEventListener('click', triggerGPS);document.getElementById('btn-execute').addEventListener('click', triggerExecuteManual);// ERSTSCHLAG BEIM LADENwindow.addEventListener('DOMContentLoaded', () => {triggerGPS();updateHardwareBattery();});
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    currentLat = position.coords.latitude.toFixed(5);
+currentLon = position.coords.longitude.toFixed(5);if (gpsDisplay) gpsDisplay.innerText = LAT: ${currentLat} | LON: ${currentLon};if (gpsBtn) gpsBtn.innerText = "[ GPS LOCK ]";},(error) => {if (gpsBtn) gpsBtn.innerText = "[ RETRY GPS ]";if (gpsDisplay) gpsDisplay.innerText = "ACCESS DENIED";},{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });}// NEU: KOSTENLOSE OPEN-METEO GEOCODING INTELLIGENZdocument.getElementById('target-search').addEventListener('change', function() {const query = this.value.trim();const gpsDisplay = document.getElementById('gps-display');const gpsBtn = document.getElementById('btn-gps');if (query.length < 2) return;if (gpsDisplay) gpsDisplay.innerText = "GEO-SEARCHING...";// Aufruf der freien Schnittstelle mit dem Suchbegrifffetch(https://open-meteo.com{encodeURIComponent(query)}&count=1&language=de&format=json).then(response => response.json()).then(data => {if (data.results && data.results.length > 0) {const target = data.results[0];currentLat = target.latitude.toFixed(5);currentLon = target.longitude.toFixed(5);// UI aktualisieren mit dem gefundenen Stadtnamenif (gpsDisplay) gpsDisplay.innerText = ${target.name.toUpperCase()} | LAT: ${currentLat} | LON: ${currentLon};if (gpsBtn) gpsBtn.innerText = "[ CITY LOCK ]";} else {if (gpsDisplay) gpsDisplay.innerText = "LOCATION NOT FOUND";}}).catch(() => {if (gpsDisplay) gpsDisplay.innerText = "SEARCH OFFLINE / ERR";});});// MANUELLER RE-SCAN BUTTONdocument.getElementById('btn-gps').addEventListener('click', () => {document.getElementById('target-search').value = ""; // Löscht Suchfeld bei Manuellem GPS-ResettriggerAutomaticGPS();});// HARDWARE-AKKUfunction checkHardwareBattery() {if (navigator.getBattery) {navigator.getBattery().then(battery => {updateBatteryDisplay(battery);battery.addEventListener('levelchange', () => updateBatteryDisplay(battery));});} else {const battDisplay = document.getElementById('batt-display');if (battDisplay) battDisplay.innerText = "100%";}}function updateBatteryDisplay(battery) {const battDisplay = document.getElementById('batt-display');if (battDisplay) {const level = Math.round(battery.level * 100);battDisplay.innerText = level + "%";if (level < 20) {battDisplay.classList.add('blink');} else {battDisplay.classList.remove('blink');}}}// EXECUTE BUTTON ACTIONdocument.getElementById('btn-execute').addEventListener('click', () => {if (!currentLat || !currentLon) {alert("POSITION FEHLT! BITTE GPS ERST REAGIEREN LASSEN ODER ORT EINGEBEN!");return;}const execBtn = document.getElementById('btn-execute');if (execBtn) execBtn.innerText = "[ LOADING... ]";document.getElementById('wind-0').innerText = "14 KM/H";document.getElementById('wind-30').innerText = "19 KM/H";document.getElementById('wind-60').innerText = "24 KM/H";document.getElementById('wind-90').innerText = "28 KM/H";document.getElementById('wind-120').innerText = "32 KM/H";document.getElementById('compliance-c0').innerText = "🟢 SAFE";document.getElementById('compliance-c1').innerText = "🟢 SAFE";document.getElementById('vis-display').innerText = "14.5 KM";document.getElementById('rain-display').innerText = "0.0 MM";document.getElementById('kp-display').innerText = "KP: 3";document.getElementById('wind-dir-text').innerText = "DIR: 120°";document.getElementById('wind-arrow').style.transform = "rotate(120deg)";const now = new Date();document.getElementById('last-update').innerText = now.toTimeString().split(' ');if (execBtn) execBtn.innerText = "[ EXECUTE ]";});// INITIALISIERUNG BEIM EINSCHALTENwindow.addEventListener('DOMContentLoaded', () => {startSystemClock();checkHardwareBattery();triggerAutomaticGPS();});
